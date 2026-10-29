@@ -1,75 +1,69 @@
-# React + TypeScript + Vite
+# Rubik’s Cube Solver
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A tiny web app that lets you input a 54‑character cube state and returns the shortest solution using the **Kociemba two‑phase algorithm**.
 
-Currently, two official plugins are available:
+> The project is built with React + TypeScript, bundled by Vite. It ships with ESLint and Vitest for linting and unit testing.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features
+- **Interactive UI** – paste or type a cube state string (U,R,F,D,L,B order) in the textarea.
+- **Solve button** – triggers the solver and displays the sequence of moves.
+- **Error handling** – shows friendly messages if the input is invalid or no solution can be found.
+- **Extensible** – replace the placeholder move‑application logic with a full 3×3 cube simulator when needed.
 
-## React Compiler
+## Cube representation
+The solver expects a string of length 54, composed of the six face colors in this order:
+```
+U R F D L B
+```
+Each face contributes nine characters. The default mapping used by the project is:
+```
+W – White (Up)
+Y – Yellow (Down)
+G – Green (Front)
+B – Blue  (Back)
+R – Red   (Right)
+O – Orange(Left)
+```
+Example of a solved cube: `WWWWWWWWWYYYYYYYYYYYGGGGGGGGGBBBBBBBBBRRRRRRRRROOOOOOOO`.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Getting started
+```bash
+# Clone the repo
+git clone https://github.com/your-username/cube-solver.git
+cd cube-solver
 
-## Expanding the ESLint configuration
+# Install dependencies
+npm install
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+# Run in development mode (HMR enabled)
+npm run dev
+# Open http://localhost:5173 in your browser.
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+## Building for production
+```bash
+npm run build
+# The output is in the `dist/` folder and can be served by any static server.
 ```
+
+## Testing & linting
+```bash
+# Run unit tests (uses Vitest)
+npm test
+
+# Lint the codebase
+npm run lint
+```
+
+## Project structure
+- **src/** – React components and cube‑solver engine.
+  - `engine/` contains the cube state helpers and a thin wrapper around the `kociemba` npm package.
+  - `App.tsx` is the main UI component.
+- **public/** – static assets.
+- **vite.config.ts** – Vite configuration (React plugin, build options).
+
+## Contributing
+Feel free to open issues or pull requests. If you add new features, remember to update the README and tests accordingly.
+
+---
+© 2026 Rubik’s Cube Solver Project

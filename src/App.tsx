@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import './App.css'
-import { createSolvedCube, isSolved } from './engine/cubeState'
+import { createSolvedCube } from './engine/cubeState'
 import { solveCube } from './engine/solverAdapter'
 
 function App() {
@@ -16,6 +16,8 @@ function App() {
         setMoves([]);
       } else {
         setMoves(seq);setError("");}
+    } catch(e){
+      setError(String(e));
     }
   }
 
