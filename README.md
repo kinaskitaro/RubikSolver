@@ -24,7 +24,7 @@ B – Blue  (Back)
 R – Red   (Right)
 O – Orange(Left)
 ```
-Example of a solved cube: `WWWWWWWWWYYYYYYYYYYYGGGGGGGGGBBBBBBBBBRRRRRRRRROOOOOOOO`.
+Example of a solved cube: `WWWWWWWWWRRRRRRRRRGGGGGGGGGYYYYYYYYYYOOOOOOOOBBBBBBBBB` (U=W, R=R, F=G, D=Y, L=O, B=B).
 
 ## Getting started
 ```bash
@@ -57,7 +57,7 @@ npm run lint
 
 ## Project structure
 - **src/** – React components and cube‑solver engine.
-  - `engine/` contains the cube state helpers and a thin wrapper around the `kociemba` npm package.
+  - `engine/` contains the cube state helpers and a thin wrapper around the `rubik-solver` npm package (pure‑TS Kociemba two‑phase solver; the original native `kociemba` package was dropped because it ships no Windows prebuild).
   - `App.tsx` is the main UI component.
 - **public/** – static assets.
 - **vite.config.ts** – Vite configuration (React plugin, build options).
