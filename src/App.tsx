@@ -10,11 +10,13 @@ function App() {
 
   async function handleSolve(){
     try{
-      if(!isSolved(cube)) throw new Error('Invalid cube state')
-      const seq=await solveCube(cube)
-      setMoves(seq)
-      setError("")
-    }catch(e){setError(String(e))}
+      const seq=await solveCube(cube).catch(()=>null);
+      if(!seq || seq.length===0) {
+        setError('No solution found or cube is already solved');
+        setMoves([]);
+      } else {
+        setMoves(seq);setError("");}
+    }
   }
 
   return (
