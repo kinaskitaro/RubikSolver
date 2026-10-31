@@ -1,55 +1,111 @@
 // src/engine/cubeState.ts
 
 /**
- * Cube state representation: a 54‑character string.
- * Order of faces: U, R, F, D, L, B. Each face has 9 stickers.
+ * Cube state representation: a 54‑character string of colors.
+ * Face order: U R F D L B (row‑major per face).
  */
 type CubeState = string;
 export type { CubeState };
 
-const FACE_ORDER = ['U', 'R', 'F', 'D', 'L', 'B'];
-const COLORS: Record<string,string> = {
-  U:'W', // White
-  D:'Y', // Yellow
-  F:'G', // Green
-  B:'B', // Blue
-  R:'R', // Red
-  L:'O'  // Orange
+export const FACE_ORDER = ['U', 'R', 'F', 'D', 'L', 'B'] as const;
+type FaceName = typeof FACE_ORDER[number];
+
+export const HOME_COLORS: Record<FaceName, string> = {
+  U: 'W', // White
+  R: 'R', // Red
+  F: 'G', // Green
+  D: 'Y', // Yellow
+  L: 'O', // Orange
+  B: 'B', // Blue
 };
+
+const FACE_START: Record<FaceName, number> = { U: 0, R: 9, F: 18, D: 27, L: 36, B: 45 };
+
 /** Create a solved cube state */
 export function createSolvedCube(): CubeState {
-  return FACE_ORDER.map(f=>COLORS[f].repeat(9)).join('');
+  return FACE_ORDER.map((f) => HOME_COLORS[f].repeat(9)).join('');
 }
+
 /** Deep clone – strings are immutable, so just return the same string */
 export const cloneCube = (s: CubeState): CubeState => s;
-/** Simple placeholder for applying a move. Throws if unknown. */
-const MOVE_MAPS: Record<string,string[]> = {
-  // For now only U and its variants are defined.
-  'U': ['0','1','2','3','4','5','6','7','8'],
-  "U'": [],
-  'U2': []
+
+import { Cube, initSolver } from 'rubik-solver';
+
+let solverInitialized = false;
+const colorToFace: Record<string, string> = {
+  W: 'U', R: 'R', G: 'F', Y: 'D', O: 'L', B: 'B',
 };
-export function applyMove(state: CubeState, mv: string): CubeState {
-  if (!MOVE_MAPS[mv]) throw new Error(`Unknown move ${mv}`);
-  // placeholder – return state unchanged
-  return state;
+const faceToColor: Record<string, string> = {
+  U: 'W', R: 'R', F: 'G', D: 'Y', L: 'O', B: 'B',
+};
+
+function toFacelet(state: CubeState): string {
+  return state.split('').map((c) => colorToFace[c]).join('');
 }
+function fromFacelet(facelet: string): CubeState {
+  return facelet.split('').map((f) => faceToColor[f]).join('');
+}
+
+/** Apply a single move to a cube state. */
+export function applyMove(state: CubeState, mv: string): CubeState {
+  const base = mv[0];
+  if (!['U', 'R', 'F', 'D', 'L', 'B'].includes(base)) {
+    throw new Error(`Unknown move "${mv}"`);
+  }
+  const suffix = mv.slice(1);
+  if (suffix && !"'2".includes(suffix)) {
+    throw new Error(`Unknown move "${mv}"`);
+  }
+
+  // Convert to facelet string.
+  const facelet = toFacelet(state);
+  // Ensure solver tables are initialized.
+  if (!solverInitialized) {
+    initSolver();
+    solverInitialized = true;
+  }
+  const c = Cube.fromString(facelet);
+  c.move(mv);
+  const newFacelet = c.asString();
+  return fromFacelet(newFacelet);
+}
+
 /** Apply a sequence of moves */
 export function applyMoves(state: CubeState, seq: string[]): CubeState {
   return seq.reduce(applyMove, state);
 }
-/** Check if cube is solved (all faces uniform) */
+
+/** Check if the cube is solved: every face uniform **and** in its home color. */
 export function isSolved(state: CubeState): boolean {
+  if (state.length !== 54) return false;
   for (const f of FACE_ORDER) {
-    const seg = state.slice(FACE_ORDER.indexOf(f)*9,(FACE_ORDER.indexOf(f)+1)*9);
-    if (!/^[WYGBROR]*$/.test(seg)) return false;
-    if (new Set(seg).size !== 1) return false;
+    const segment = state.slice(FACE_START[f], FACE_START[f] + 9);
+    // Uniformity
+    if (!segment.split('').every(ch => ch === segment[0])) return false;
+    // Correct home color
+    if (segment[0] !== HOME_COLORS[f]) return false;
   }
   return true;
 }
-/** Serialize / deserialize – identity for now */
-export function serializeCube(state: CubeState): string {return state;}
-export function deserializeCube(str: string): CubeState {
-  if (str.length!==54) throw new Error('Invalid cube string');
+
+/** Validate a cube state: exactly 54 chars and exactly 9 of each color. */
+export function validateCube(state: CubeState): boolean {
+  if (state.length !== 54) return false;
+  const counts: Record<string, number> = { W:0,Y:0,G:0,B:0,R:0,O:0 };
+  for (const ch of state) {
+    if (!(ch in counts)) return false;
+    counts[ch]++;
+  }
+  return Object.values(counts).every(n => n === 9);
+}
+
+/** Serialize – identity */
+export function serializeCube(state: CubeState): string { return state; }
+
+/** Deserialize and validate a cube state string. Throws on invalid input. */
+export function deserializeCube(str: CubeState): CubeState {
+  if (!validateCube(str)) {
+    throw new Error(`Invalid cube state: expected 54 characters with exactly 9 of each color (W Y G B R O), got ${str.length} characters`);
+  }
   return str;
 }

@@ -1,0 +1,201 @@
+/* Cube3D — self-contained CSS-3D Rubik's cube */
+
+.cube-stage {
+  perspective: 900px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cube {
+  position: relative;
+  width: var(--cube-size, 104px);
+  height: var(--cube-size, 104px);
+  transform-style: preserve-3d;
+}
+
+/* The animated scene lives inside the cube so we can pause/play it via a class. */
+.scene {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+}
+
+.cube.is-spinning .scene {
+  animation: spin24s linear infinite;
+}
+
+/* Pause the idle spin (e.g. while solving or in input mode). */
+.cube.paused .scene {
+  animation-play-state: paused !important;
+}
+
+/* Resume on hover even while spinning, so it feels alive when you look at it. */
+.cube:not(.paused):hover .scene {
+  animation-play-state: running !important;
+}
+
+@keyframes spin24s {
+  from { transform: rotateX(-26deg) rotateY(0deg); }
+  to   { transform: rotateX(-26deg) rotateY(360deg); }
+}
+
+/* Each face fills the cube volume and is rotated onto its outward normal. */
+.face {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+}
+
+.stickers {
+  display: grid;
+  grid-template-columns: repeat(3, var(--sticker-size, 28px));
+  grid-auto-rows: var(--sticker-size, 28px);
+  gap: 4px;
+  width: calc(var(--sticker-size, 28px) * 3 + 8px);
+  height: calc(var(--sticker-size, 28px) * 3 + 8px);
+}
+
+.sticker {
+  border: none;
+  padding: 0;
+  width: var(--sticker-size, 28px);
+  height: var(--sticker-size, 28px);
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35), inset 0 2px 4px rgba(255, 255, 255, 0.25);
+  transition: transform 0.12s ease, filter 0.12s ease;
+}
+
+/* White stickers get a subtle vignette so they read as white plastic, not blank. */
+.sticker[data-color="W"] {
+  background: radial-gradient(circle at 35% 30%, #ffffff, #d9dde0 70%);
+}
+
+.sticker.clickable {
+  cursor: crosshair;
+  border-radius: 6px;
+}
+
+.sticker.clickable:hover {
+  transform: scale(0.88);
+  filter: brightness(1.15) saturate(1.2);
+  z-index: 5;
+  position: relative;
+}
+
+/* A soft highlight that appears on hover in input mode, so you can see the target cell. */
+.sticker.clickable::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0);
+  transition: background 0.12s ease;
+  pointer-events: none;
+}
+
+.sticker.clickable:hover::after {
+  background: radial-gradient(circle at 40% 35%, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0));
+}
+
+/* Color palette swatches for input mode */
+.palette {
+  display: inline-flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.swatch {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.swatch:hover {
+  transform: translateY(-2px);
+}
+
+.swatch.active {
+  border-color: #fff;
+  box-shadow: 0 0 0 2px var(--accent), 0 4px 10px rgba(0, 0, 0, 0.35);
+  transform: translateY(-2px);
+}
+
+.swatch.eraser {
+  background: repeating-conic-gradient(#ccc 0% 25%, #fff 0% 50%) !important;
+  background-size: 12px 12px;
+}
+
+
+/* ===================== App layout utilities ===================== */
+
+:root {
+  --accent: #aa3bff;
+}
+
+.color-input,
+.panel {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.color-input {
+  display: flex;
+  flexDirection: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.move-row,
+.btn-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.move-row input[type="text"] {
+  flex: 1 1 auto;
+  min-width: 140px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.15));
+  color: inherit;
+}
+
+.btn-row button {
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.15));
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.08s ease;
+}
+
+.btn-row button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.btn-row button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.btn-row button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+code {
+  font-family: ui-monospace, Consolas, monospace;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  padding: 4px 8px;
+}
