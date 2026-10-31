@@ -1,0 +1,51 @@
+/* Cross-shaped Rubik's cube face net (Flat view). */
+.face-net {
+  position: relative;
+}
+
+/* Each face block is an absolutely-positioned 3x3 container. */
+.face-block {
+  width: calc(3 * var(--cell));
+  height: calc(3 * var(--cell));
+}
+
+.sticker-grid {
+  display: grid;
+  grid-template-columns: repeat(3, var(--cell));
+  grid-template-rows: repeat(3, var(--cell));
+  gap: var(--gap);
+}
+
+.net-sticker {
+  width: 100%;
+  height: 100%;
+  border: none;
+  padding: 0;
+  cursor: default;
+  border-radius: 6px;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.35),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.25);
+  transition: transform 0.1s ease;
+}
+
+/* Home colours — matches the solved cube (W/Y/G/B/R/O). */
+.net-sticker[data-color="W"] { background: #f7f7f8; }
+.net-sticker[data-color="Y"] { background: #f2c200; }
+.net-sticker[data-color="G"] { background: #009e60; }
+.net-sticker[data-color="B"] { background: #0051ba; }
+.net-sticker[data-color="R"] { background: #b4001e; }
+.net-sticker[data-color="O"] { background: #ff5800; }
+
+/* Empty / transparent sticker (eraser) */
+.net-sticker[data-color=""] {
+  background: repeating-conic-gradient(#2a2a30 0% / 6px 6px, #222227 60% / 6px 6px);
+}
+
+.net-sticker.clickable {
+  cursor: pointer;
+}
+
+.net-sticker.clickable:hover {
+  transform: scale(0.92);
+  filter: brightness(1.08);
+}

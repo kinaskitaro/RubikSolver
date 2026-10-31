@@ -1,8 +1,11 @@
+import React, { useState, useRef } from 'react';
+import { slotFor } from '../engine/faceGrid';
 
 interface Props {
   state: string; // 54-char color string in URFDLB order (from engine)
   inputMode?: boolean;      // when true, each sticker is clickable to paint it
   onStickerClick?: (faceIndex: number, cellIndex: number) => void; // optional handler for input mode
+  paused?: boolean;         // when true, the idle spin animation stops
 }
 
 const STICKER = 28; // px visible size of one sticker
@@ -22,17 +25,6 @@ function faceTransform(faceIndex: number): string {
   }
 }
 
-// Orientation of the state slice for a face into the visual 3x3 grid.
-// A fixed mapping keeps rendering coherent across rotations (the solver only
-// permutes which color lands in each cell), so this never needs to change.
-function slotFor(faceIndex: number, idx: number): [number, number] {
-  const r = Math.floor(idx / 3);
-  const c = idx % 3;
-  // Back face is viewed from behind -> flip both axes so it reads naturally.
-  if (faceIndex === 1) return [2 - r, 2 - c];
-  return [r, c];
-}
-
 const COLOR_MAP: Record<string, string> = {
   W: '',   // transparent -> uses the CSS vignette via [data-color="W"]
   Y: '#f2c200',
@@ -42,40 +34,82 @@ const COLOR_MAP: Record<string, string> = {
   O: '#ff5800',
 };
 
-export const Cube3D: React.FC<Props> = ({ state, inputMode, onStickerClick }) => {
-  const cells = Array.from({ length: 6 }, (_, faceIndex) => {
-    const start = faceIndex * 9;
-    const slice = state.slice(start, start + 9).split('');
-    return { faceIndex, slice };
-  });
+interface Rotation {
+  x: number; // pitch (deg)
+  y: number; // yaw (deg)
+}
+
+export const Cube3D: React.FC<Props> = ({ state, inputMode, onStickerClick, paused }) => {
+  const [rotation, setRotation] = useState<Rotation>({ x: -18, y: -32 });
+  const dragRef = useRef<{ startX: number; startY: number; lastX: number; lastY: number } | null>(null);
 
   const paintOnClick = (faceIndex: number, cellIndex: number): void => {
     if (inputMode && onStickerClick) onStickerClick(faceIndex, cellIndex);
   };
 
+  // Drag-to-rotate. Only active when NOT painting (painting needs precise clicks).
+  const onPointerDown = (e: React.PointerEvent): void => {
+    if (inputMode) return;
+    dragRef.current = { startX: e.clientX, startY: e.clientY, lastX: rotation.y, lastY: rotation.x };
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  };
+
+  const onPointerMove = (e: React.PointerEvent): void => {
+    const d = dragRef.current;
+    if (!d) return;
+    setRotation({ x: d.lastY - (e.clientX - d.startX) * 0.4, y: d.lastX + (e.clientY - d.startY) * 0.4 });
+  };
+
+  const onPointerUp = (): void => {
+    dragRef.current = null;
+  };
+
+  // Keyboard nudge for accessibility.
+  React.useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (inputMode || !dragRef.current) return;
+      setRotation(prev => {
+        const pitchStep = e.key === 'ArrowUp' ? -5 : e.key === 'ArrowDown' ? 5 : 0;
+        const yawStep = e.key === 'ArrowLeft' ? -5 : e.key === 'ArrowRight' ? 5 : 0;
+        return { x: prev.x + pitchStep, y: prev.y + yawStep };
+      });
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [inputMode]);
+
+  const slice = (faceIndex: number) => state.slice(faceIndex * 9, faceIndex * 9 + 9).split('');
+
   return (
-    <div className="cube" style={{ ['--half' as string]: `${HALF}px` }}>
-      {cells.map(({ faceIndex, slice }) => (
-        <div key={faceIndex} className="face" style={{ transform: faceTransform(faceIndex) }}>
-          <div className="stickers">
-            {slice.map((color, idx) => {
-              const [row, col] = slotFor(faceIndex, idx);
-              return (
-                <button
-                  type="button"
-                  key={idx}
-                  className={`sticker${inputMode ? ' clickable' : ''}`}
-                  data-color={color}
-                  style={{ gridRow: row + 1, gridColumn: col + 1, background: COLOR_MAP[color] || undefined }}
-                  onClick={() => paintOnClick(faceIndex, idx)}
-                >
-                  {inputMode && <span className="sticker-shine" />}
-                </button>
-              );
-            })}
+    <div
+      className={`cube-stage cube${paused ? ' paused' : ''}`}
+      style={{ '--cube-size': '104px' } as React.CSSProperties}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerLeave={onPointerUp}
+    >
+      <div className="cube-inner" style={{ transform: `rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)` }}>
+        {Array.from({ length: 6 }, (_, faceIndex) => (
+          <div key={faceIndex} className="face" style={{ transform: faceTransform(faceIndex) }}>
+            <div className="stickers">
+              {slice(faceIndex).map((color, idx) => {
+                const [row, col] = slotFor(faceIndex, idx);
+                return (
+                  <button
+                    type="button"
+                    key={idx}
+                    className={`sticker${inputMode ? ' clickable' : ''}`}
+                    data-color={color}
+                    style={{ gridRow: row + 1, gridColumn: col + 1, background: COLOR_MAP[color] || undefined }}
+                    onClick={() => paintOnClick(faceIndex, idx)}
+                  />
+                );
+              })}
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 };

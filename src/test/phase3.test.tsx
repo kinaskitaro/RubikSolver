@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import React from 'react';
 import App from '../App';
 import { createSolvedCube, validateCube, applyMoves } from '../engine/cubeState';
@@ -33,9 +33,10 @@ describe('solveCube', () => {
 });
 
 describe('App component', () => {
-  // Render each test into its own detached container for full isolation.
-  // This avoids depending on the shared `screen` singleton, which can be left
-  // in a broken state by an earlier failing test (e.g. RTL auto-cleanup).
+  // Every test renders into its own detached container and queries only within
+  // that container, so instances never leak across tests (no shared `screen`).
+  afterEach(cleanup);
+
   async function setup(): Promise<HTMLDivElement> {
     const div = document.createElement('div');
     document.body.appendChild(div);
@@ -46,22 +47,22 @@ describe('App component', () => {
   it('shows error for invalid input', async () => {
     const div = await setup();
     fireEvent.change(div.querySelector('textarea')!, { target: { value: 'W'.repeat(53) } });
-    fireEvent.click(screen.getByText('Solve'));
+    div.querySelector('.solve-btn').click();
     await waitFor(() => expect(div.querySelector('pre')).toBeTruthy());
   });
 
   it('shows solved message for a solved cube', async () => {
     const div = await setup();
     fireEvent.change(div.querySelector('textarea')!, { target: { value: createSolvedCube() } });
-    fireEvent.click(screen.getByText('Solve'));
-    await waitFor(() => expect(div.querySelector('pre')).toBeTruthy());
+    div.querySelector('.solve-btn').click();
+    await waitFor(() => expect(div.querySelector('pre')).toBeTruthy()); // "already solved"
   });
 
   it('shows a solution for a scrambled state', async () => {
     const div = await setup();
     const state = applyMoves(createSolvedCube(), SCRAMBLE_MOVES);
     fireEvent.change(div.querySelector('textarea')!, { target: { value: state } });
-    fireEvent.click(screen.getByText('Solve'));
+    div.querySelector('.solve-btn').click();
     await waitFor(() => {
       expect(div.querySelector('h2')).toBeTruthy(); // "Solution (n)" heading appears once moves exist
       const code = div.querySelector('code');
