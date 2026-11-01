@@ -185,7 +185,7 @@ function App() {
         {/* Left column — the cube + raw state */}
         <section className="cube-area">
           {viewMode === '3D' ? (
-            <Cube3D state={cube} inputMode={inputMode} onStickerClick={handlePaintSticker} />
+            <Cube3D state={cube} inputMode={inputMode} paused={loading || inputMode} onStickerClick={handlePaintSticker} />
           ) : viewMode === 'Kociemba' ? (
             <>
               <div className="flat-label">Flat net</div>

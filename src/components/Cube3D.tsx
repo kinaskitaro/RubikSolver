@@ -41,6 +41,7 @@ interface Rotation {
 
 export const Cube3D: React.FC<Props> = ({ state, inputMode, onStickerClick, paused }) => {
   const [rotation, setRotation] = useState<Rotation>({ x: -18, y: -32 });
+  const [dragging, setDragging] = useState(false);
   const dragRef = useRef<{ startX: number; startY: number; lastX: number; lastY: number } | null>(null);
 
   const paintOnClick = (faceIndex: number, cellIndex: number): void => {
@@ -51,6 +52,7 @@ export const Cube3D: React.FC<Props> = ({ state, inputMode, onStickerClick, paus
   const onPointerDown = (e: React.PointerEvent): void => {
     if (inputMode) return;
     dragRef.current = { startX: e.clientX, startY: e.clientY, lastX: rotation.y, lastY: rotation.x };
+    setDragging(true);
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
   };
 
@@ -62,6 +64,7 @@ export const Cube3D: React.FC<Props> = ({ state, inputMode, onStickerClick, paus
 
   const onPointerUp = (): void => {
     dragRef.current = null;
+    setDragging(false);
   };
 
   // Keyboard nudge for accessibility.
@@ -82,17 +85,21 @@ export const Cube3D: React.FC<Props> = ({ state, inputMode, onStickerClick, paus
 
   return (
     <div
-      className={`cube-stage cube${paused ? ' paused' : ''}`}
+      className={`cube-stage${paused ? ' paused' : ''}${dragging ? ' dragging' : ''}`}
       style={{ '--cube-size': '104px' } as React.CSSProperties}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerLeave={onPointerUp}
     >
+      {/* Outer: user-controlled rotation (drag / keys). */}
       <div className="cube-inner" style={{ transform: `rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)` }}>
-        {Array.from({ length: 6 }, (_, faceIndex) => (
-          <div key={faceIndex} className="face" style={{ transform: faceTransform(faceIndex) }}>
-            <div className="stickers">
+        {/* Inner: gentle idle spin. Composed inside the user rotation and paused
+            while solving, painting, or dragging so drags feel precise. */}
+        <div className="cube-idle">
+          {Array.from({ length: 6 }, (_, faceIndex) => (
+            <div key={faceIndex} className="face" style={{ transform: faceTransform(faceIndex) }}>
+              <div className="stickers">
               {slice(faceIndex).map((color, idx) => {
                 const [row, col] = slotFor(faceIndex, idx);
                 return (
@@ -108,7 +115,8 @@ export const Cube3D: React.FC<Props> = ({ state, inputMode, onStickerClick, paus
               })}
             </div>
           </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );
